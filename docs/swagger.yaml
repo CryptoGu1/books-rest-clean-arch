@@ -1,0 +1,213 @@
+basePath: /
+definitions:
+  domain.Book:
+    properties:
+      author:
+        type: string
+      id:
+        type: integer
+      publish_date:
+        type: string
+      rating:
+        type: integer
+      title:
+        type: string
+    type: object
+  domain.CreateBookInput:
+    properties:
+      author:
+        type: string
+      publish_date:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      title:
+        type: string
+    required:
+    - author
+    - title
+    type: object
+  domain.UpdateBookInput:
+    properties:
+      author:
+        type: string
+      publish_date:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      title:
+        type: string
+    required:
+    - author
+    - title
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a simple RESTful api crud using Echo Framework
+  title: Swagger Books api
+  version: "1.0"
+paths:
+  /books:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех книг
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Book'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all books
+      tags:
+      - books
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую книгу в базу данных books
+      parameters:
+      - description: title, author, publish_date(default null), rating
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateBookInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create new book
+      tags:
+      - books
+  /books/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет книгу по ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete book
+      tags:
+      - books
+    get:
+      consumes:
+      - application/json
+      description: получает книгу по id
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Book by id
+      tags:
+      - books
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные книги по ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated book data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update book
+      tags:
+      - books
+swagger: "2.0"

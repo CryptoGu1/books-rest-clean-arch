@@ -1,0 +1,67 @@
+basePath: /
+definitions:
+  domain.Book:
+    properties:
+      author:
+        type: string
+      id:
+        type: integer
+      publish_date:
+        type: string
+      rating:
+        type: integer
+      title:
+        type: string
+    type: object
+  domain.CreateBookInput:
+    properties:
+      author:
+        type: string
+      publish_date:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      title:
+        type: string
+    required:
+    - author
+    - title
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a simple RESTful api crud using Echo Framework
+  title: Swagger Books api
+  version: "1.0"
+paths:
+  /books:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую книгу в базу данных books
+      parameters:
+      - description: title, author, publish_date(default null), rating
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateBookInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create new book
+      tags:
+      - books
+swagger: "2.0"
