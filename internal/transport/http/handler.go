@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	log "github.com/sirupsen/logrus"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -31,7 +32,7 @@ func (h *Handler) InitRouter() *echo.Echo {
 	e := echo.New()
 
 	//Middlewares
-	e.Use(middleware.Logger())
+	e.Use(LoggingMiddleware)
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
@@ -91,6 +92,11 @@ func mapErrorToStatus(err error) int {
 func (h *Handler) Create(c echo.Context) error {
 	var input domain.CreateBookInput
 	if err := c.Bind(&input); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "CreateBook",
+			"problem": "request body bind error",
+		}).Error(err)
+
 		return respondErr(c, echo.NewHTTPError(http.StatusBadRequest, "invalid request body"))
 	}
 
@@ -101,6 +107,11 @@ func (h *Handler) Create(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := h.service.Create(ctx, &input)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"handler": "CreateBook",
+			"problem": "service error",
+		}).Error(err)
+
 		return respondErr(c, err)
 	}
 
