@@ -6,9 +6,9 @@ import (
 
 	_ "github.com/CryptoGu1/books-rest-clean-arch/docs"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/config"
+	"github.com/CryptoGu1/books-rest-clean-arch/internal/handler/http"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/repository"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/service"
-	"github.com/CryptoGu1/books-rest-clean-arch/internal/transport/http"
 	"github.com/CryptoGu1/books-rest-clean-arch/pkg/postgres"
 	log "github.com/sirupsen/logrus"
 )
@@ -50,10 +50,16 @@ func main() {
 	}
 	defer db.Close()
 
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+
 	//init DI
 	bookRepo := repository.NewBookPostgresRepo(db)
+	userRepo := repository.NewUserPostgresRepo(db)
+
 	bookService := service.NewBookService(bookRepo)
-	handler := http.NewHandler(bookService)
+	userService := service.NewAuthService(userRepo, jwtSecret)
+
+	handler := http.NewHandler(bookService, userService, jwtSecret)
 
 	router := handler.InitRouter()
 
