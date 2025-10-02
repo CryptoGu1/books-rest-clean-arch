@@ -1,82 +1,13 @@
 package http
 
 import (
-	"database/sql"
-	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/domain"
-	"github.com/CryptoGu1/books-rest-clean-arch/internal/service"
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
-	echoSwagger "github.com/swaggo/echo-swagger"
 )
-
-type Handler struct {
-	service  *service.BookService
-	validate *validator.Validate
-}
-
-func NewHandler(s *service.BookService) *Handler {
-	return &Handler{
-		service:  s,
-		validate: validator.New(),
-	}
-}
-
-func (h *Handler) InitRouter() *echo.Echo {
-	e := echo.New()
-
-	//Middlewares
-	e.Use(LoggingMiddleware)
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
-
-	//Swager
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
-
-	booksGroup := e.Group("/books")
-	{
-		booksGroup.POST("", h.Create)
-		booksGroup.GET("/:id", h.GetById)
-		booksGroup.GET("", h.GetAll)
-		booksGroup.PUT("/:id", h.Update)
-		booksGroup.DELETE("/:id", h.Delete)
-	}
-
-	return e
-}
-
-// Единый формат успешного ответа
-func respondJSON(c echo.Context, code int, payload interface{}) error {
-	return c.JSON(code, payload)
-}
-
-func respondErr(c echo.Context, err error) error {
-	status := mapErrorToStatus(err)
-	//На будущее есть ode, trace_id и т.д
-	return c.JSON(status, map[string]interface{}{
-		"error": err.Error(),
-		"time":  time.Now().UTC(),
-	})
-}
-
-func mapErrorToStatus(err error) int {
-	// domain.ErrBookNotFound -> 404
-	if errors.Is(err, domain.ErrBookNotFound) {
-		return http.StatusNotFound
-	}
-	// sql.ErrNoRows -> 404
-	if errors.Is(err, sql.ErrNoRows) {
-		return http.StatusNotFound
-	}
-	// по умолчанию — 500
-	return http.StatusInternalServerError
-}
 
 // Create godoc
 //
@@ -105,7 +36,7 @@ func (h *Handler) Create(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	id, err := h.service.Create(ctx, &input)
+	id, err := h.bookService.Create(ctx, &input)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "CreateBook",
@@ -141,7 +72,7 @@ func (h *Handler) GetById(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	book, err := h.service.GetById(ctx, id)
+	book, err := h.bookService.GetById(ctx, id)
 	if err != nil {
 		return respondErr(c, err)
 	}
@@ -161,7 +92,7 @@ func (h *Handler) GetById(c echo.Context) error {
 // @Router       /books [get]
 func (h *Handler) GetAll(c echo.Context) error {
 	ctx := c.Request().Context()
-	books, err := h.service.GetAll(ctx)
+	books, err := h.bookService.GetAll(ctx)
 	if err != nil {
 		return respondErr(c, err)
 
@@ -200,7 +131,7 @@ func (h *Handler) Update(c echo.Context) error {
 
 	book := input.ToBook()
 	ctx := c.Request().Context()
-	if err := h.service.Update(ctx, id, book); err != nil {
+	if err := h.bookService.Update(ctx, id, book); err != nil {
 		return respondErr(c, err)
 	}
 	return respondJSON(c, http.StatusOK, map[string]interface{}{
@@ -231,7 +162,7 @@ func (h *Handler) Delete(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	if err := h.service.Delete(ctx, id); err != nil {
+	if err := h.bookService.Delete(ctx, id); err != nil {
 		return respondErr(c, err)
 	}
 
