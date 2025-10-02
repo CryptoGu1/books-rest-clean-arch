@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	_ "github.com/CryptoGu1/books-rest-clean-arch/docs"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/config"
+	"github.com/CryptoGu1/books-rest-clean-arch/internal/handler/http"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/repository"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/service"
-	"github.com/CryptoGu1/books-rest-clean-arch/internal/transport/http"
 	"github.com/CryptoGu1/books-rest-clean-arch/pkg/postgres"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -23,14 +24,18 @@ const (
 //	@host			localhost:8080
 //	@BasePath		/
 
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+}
+
 func main() {
 	//init db
 	cfg, err := config.New(CONFIG_DIR, CONFIG_FILE)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	log.Printf("config: %+v\n", cfg)
 
 	db, err := postgres.NewPostgresConnectionInfo(postgres.ConnectionInfo{
 		Host:     cfg.DB.Host,
@@ -43,17 +48,22 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Connected to database")
 	defer db.Close()
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	//init DI
 	bookRepo := repository.NewBookPostgresRepo(db)
+	userRepo := repository.NewUserPostgresRepo(db)
+
 	bookService := service.NewBookService(bookRepo)
-	handler := http.NewHandler(bookService)
+	userService := service.NewAuthService(userRepo, jwtSecret)
+
+	handler := http.NewHandler(bookService, userService, jwtSecret)
 
 	router := handler.InitRouter()
 
-	log.Println("Listening on port 8080")
+	log.Info("SERVER STARTED")
 	if err := router.Start(fmt.Sprintf(":%d", cfg.Server.Port)); err != nil {
 		log.Fatal(err)
 	}
