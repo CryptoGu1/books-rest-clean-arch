@@ -24,6 +24,7 @@ func respondErr(c echo.Context, err error) error {
 }
 
 func mapErrorToStatus(err error) int {
+	var he *echo.HTTPError
 	// domain.ErrBookNotFound -> 404
 	if errors.Is(err, domain.ErrBookNotFound) {
 		return http.StatusNotFound
@@ -33,5 +34,8 @@ func mapErrorToStatus(err error) int {
 		return http.StatusNotFound
 	}
 	// по умолчанию — 500
+	if errors.As(err, &he) {
+		return he.Code
+	}
 	return http.StatusInternalServerError
 }

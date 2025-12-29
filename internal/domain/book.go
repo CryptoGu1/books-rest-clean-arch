@@ -2,12 +2,7 @@ package domain
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
-)
-
-var (
-	ErrBookNotFound = errors.New("book not found")
 )
 
 // --- Кастомный тип ---

@@ -9,6 +9,7 @@ import (
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/handler/http"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/repository"
 	"github.com/CryptoGu1/books-rest-clean-arch/internal/service"
+	"github.com/CryptoGu1/books-rest-clean-arch/pkg/log_grpc"
 	"github.com/CryptoGu1/books-rest-clean-arch/pkg/postgres"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,9 +56,20 @@ func main() {
 	//init DI
 	bookRepo := repository.NewBookPostgresRepo(db)
 	userRepo := repository.NewUserPostgresRepo(db)
+	tokenRepo := repository.NewToken(db)
 
-	bookService := service.NewBookService(bookRepo)
-	userService := service.NewAuthService(userRepo, jwtSecret)
+	logHost := os.Getenv("LOG_GRPC_HOST")
+	if logHost == "" {
+		logHost = "localhost"
+	}
+	LogPort := 9000
+	auditClient, err := log_grpc.NewClient(logHost, LogPort)
+	if err != nil {
+		log.Error("Failed to connect to log", err)
+	}
+	bookService := service.NewBookService(bookRepo, auditClient)
+
+	userService := service.NewAuthService(userRepo, tokenRepo, auditClient, jwtSecret)
 
 	handler := http.NewHandler(bookService, userService, jwtSecret)
 

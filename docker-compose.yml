@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Приложение (тут всё без изменений)
+  app:
+    build: .
+    container_name: books_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=books
+      - DB_SSLMODE=disable
+      - JWT_SECRET=super_secret
+      - SERVER_PORT=8080
+      - LOG_GRPC_HOST=global_logger
+      # - AUDIT_SERVICE_HOST=host.docker.internal
+    networks:
+      - microservices-net
+
+
+
+  # База данных (ВЕРСИЯ 17)
+  postgres:
+    image: postgres:17-alpine  # <--- Поменяли на 17
+    container_name: books
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=books
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d books"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  # Мигратор
+  migrator:
+    image: migrate/migrate
+    container_name: books_migrator
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=postgres://postgres:postgres@postgres:5432/books?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    external: true
+
+volumes:
+  postgres_data:
